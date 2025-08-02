@@ -1,0 +1,223 @@
+{
+    "name": "测试工作流",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -272,
+          -112
+        ],
+        "id": "c72cd715-156a-43f2-81fa-c025618a6dbf",
+        "name": "When clicking ‘Execute workflow’"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "66561e84-ffe2-4a84-9fb2-828c1d340f1e",
+                "leftValue": "={{ $json.data.has_more }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          112,
+          -240
+        ],
+        "id": "820817fe-45b9-4299-b03f-dfe2d4844e88",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst offset = $input.first().json.data.items.length\n\nreturn {'offset': offset * ($runIndex+1)};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          368,
+          -144
+        ],
+        "id": "7e77822b-de39-4e5f-831f-0d6ca1b8e081",
+        "name": "Get Offset"
+      },
+      {
+        "parameters": {
+          "amount": 6
+        },
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          560,
+          -144
+        ],
+        "id": "09399021-b0a3-4609-ad7f-77289edc8c1d",
+        "name": "Wait",
+        "webhookId": "e95caa30-b318-4ca4-b464-903ef5bebc03"
+      },
+      {
+        "parameters": {
+          "options": {
+            "headerRow": true
+          }
+        },
+        "type": "n8n-nodes-base.convertToFile",
+        "typeVersion": 1.1,
+        "position": [
+          576,
+          -352
+        ],
+        "id": "a43ea468-f09d-4d00-9708-dd6556e59519",
+        "name": "Convert to File"
+      },
+      {
+        "parameters": {
+          "jsCode": "/** @type {Array<{request_id: string, code: number, data: JSON, msg: string}>} */\nlet results = [];\nlet i = 0;\nlet hasMoreData = true;\n\nwhile (hasMoreData) {\n  try {\n    const newData = $(\"Tushare-StockInfo\").all(0, i);\n    if (newData && newData.length > 0) {\n      // @ts-ignore\n      results = results.concat(newData);\n      i++;\n    } else {\n      hasMoreData = false;\n    }\n  } catch (error) {\n    hasMoreData = false;\n  }\n}\n// @ts-ignore Get Fields\nconst fileds = results[0].json.data.fields\n// @ts-ignore\nconst datas = results.flatMap(item => item.json.data.items);\nconst final_data = {'fields':fileds, 'datas':datas};\n\n// Convert Data -> Array<Object>\nlet final_result = [];\nfor (const entry of final_data.datas) {\n    let mapped_item = {};\n    for (let i = 0; i < final_data.fields.length; i++) {\n        // @ts-ignore\n        mapped_item[final_data.fields[i]] = entry[i];\n    }\n    final_result.push(mapped_item);\n}\n// @ts-ignore\nreturn final_result;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          368,
+          -352
+        ],
+        "id": "4a262bef-3d3d-4c2d-a81e-58fd1edf9c60",
+        "name": "Combine All Data"
+      },
+      {
+        "parameters": {
+          "apiName": "stock_company",
+          "params": {
+            "parameters": {
+              "inputMode": "json",
+              "jsonParams": "={\n  \"offset\": {{ $json.offset || 0}},\n  \"limit\": 3000\n}"
+            }
+          },
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-tushare.tushare",
+        "typeVersion": 1,
+        "position": [
+          -48,
+          -112
+        ],
+        "id": "b4eabb20-5092-49de-856f-667da3a03706",
+        "name": "Tushare-StockInfo",
+        "credentials": {
+          "tushareApi": {
+            "id": "ohNqE0FWsh5O26bj",
+            "name": "Tushare account"
+          }
+        }
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "When clicking ‘Execute workflow’": {
+        "main": [
+          [
+            {
+              "node": "Tushare-StockInfo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Get Offset",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Combine All Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Offset": {
+        "main": [
+          [
+            {
+              "node": "Wait",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wait": {
+        "main": [
+          [
+            {
+              "node": "Tushare-StockInfo",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Convert to File": {
+        "main": [
+          []
+        ]
+      },
+      "Combine All Data": {
+        "main": [
+          [
+            {
+              "node": "Convert to File",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tushare-StockInfo": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "8539a373-49c6-4742-bc97-ba142d6acdc8",
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "b496150841483df09747a25f479a6e6cb04c07854a3a873184d83eedf527a4e8"
+    },
+    "id": "EGEdiL1zNmSzyFHY",
+    "tags": []
+  }
