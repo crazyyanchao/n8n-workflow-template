@@ -1,5 +1,8 @@
 # n8n-workflow-template
 
+[![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
+[![中文文档](https://img.shields.io/badge/中文文档-点击查看-orange)](README-zh.md)
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![n8n](https://img.shields.io/badge/n8n-Workflow%20Template-green.svg)](https://n8n.io/)
 
