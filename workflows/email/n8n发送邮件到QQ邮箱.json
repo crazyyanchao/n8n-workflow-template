@@ -1,0 +1,67 @@
+{
+    "name": "n8n发送邮件到QQ邮箱",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          -288,
+          -176
+        ],
+        "id": "6053252b-6724-4607-b761-7dc3aad9a7d6",
+        "name": "When clicking ‘Execute workflow’"
+      },
+      {
+        "parameters": {
+          "fromEmail": "yanchaoma@foxmail.com",
+          "toEmail": "yanchaoma@foxmail.com",
+          "subject": "n8n workflow test",
+          "emailFormat": "both",
+          "text": "Hello World!  \nThis is a plain text email sent via n8n.  \nHave a nice day!  ",
+          "html": "=<!DOCTYPE html>\n<html>\n<head>\n    <style>\n        body { font-family: Arial, sans-serif; }\n        .header { color: #0066cc; font-size: 18px; }\n        .content { margin: 10px 0; }\n    </style>\n</head>\n<body>\n    <div class=\"header\">Hello World!</div>\n    <div class=\"content\">This is an <strong>HTML email</strong> sent via n8n.</div>\n    <div class=\"content\">Current time: {{$now.toLocaleString()}}</div>\n    <div>Cheers,<br>Your n8n Bot</div>\n</body>\n</html>",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2.1,
+        "position": [
+          -80,
+          -176
+        ],
+        "id": "7d5ed85c-b541-435c-ac74-e7400c14664a",
+        "name": "Send email",
+        "webhookId": "26e2f4b2-3d96-491c-994d-a4c2dc50e3f9",
+        "credentials": {
+          "smtp": {
+            "id": "BLNGgayXoXs7C44O",
+            "name": "SMTP account"
+          }
+        }
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "When clicking ‘Execute workflow’": {
+        "main": [
+          [
+            {
+              "node": "Send email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "a2acacb5-0fc6-4540-b4c1-61a5ecd48bf2",
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "b496150841483df09747a25f479a6e6cb04c07854a3a873184d83eedf527a4e8"
+    },
+    "id": "ujUf5zxgqcDxZXsM",
+    "tags": []
+  }
