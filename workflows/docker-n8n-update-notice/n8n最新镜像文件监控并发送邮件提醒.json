@@ -1,0 +1,258 @@
+{
+  "name": "n8n最新镜像文件监控并发送邮件提醒",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        -32
+      ],
+      "id": "51041558-14e6-4b26-ab1a-e45ae70f8f3f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "command": "# 获取镜像列表并转换为JSON格式\ncurl -s \"https://docker.n8n.io/v2/n8nio/n8n/tags/list\" | \\\njq -r '.tags[]' | \\\ngrep -E '^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9]+)?$' | \\\nsort -Vr | \\\nhead -6 | \\\njq -R . | \\\njq -s 'map({date: (now | strftime(\"%Y-%m-%d\")), version: .})' | \\\ntee .n8n_docker_image_latest.json\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -112
+      ],
+      "id": "08c7acd5-b64e-4f13-8b83-c1323c254022",
+      "name": "监控n8n镜像最新标签并保存到文件"
+    },
+    {
+      "parameters": {
+        "fromEmail": "yanchaoma@foxmail.com",
+        "toEmail": "yanchaoma@foxmail.com",
+        "subject": "n8n最新消息更新：n8n-amir Docker 镜像需要同步更新",
+        "emailFormat": "text",
+        "text": "={{ $json.stdout }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        -144
+      ],
+      "id": "1d9f81bd-0200-41c9-9d1d-46c2d1316968",
+      "name": "发送邮件提醒",
+      "webhookId": "713def13-0d00-4bbd-8d14-97d85c676416",
+      "credentials": {
+        "smtp": {
+          "id": "BLNGgayXoXs7C44O",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "curl -s \"https://hub.docker.com/v2/repositories/grapher01110/n8n-amir/tags/?page_size=100\" |\njq '[.results[]\n    | select(.name | test(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+\"))   # 只保留 v 开头的语义化版本\n    | {date: (now | strftime(\"%Y-%m-%d\")), version: .name}\n]\n| sort_by(\n    (.version | ltrimstr(\"v\") | split(\"-\")[0] | split(\".\") | map(tonumber)),\n    (.version | split(\"-\")[1] // \"\")\n)\n| reverse'\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        0,
+        80
+      ],
+      "id": "9f65d439-df2c-4daa-a703-2c03be6adda2",
+      "name": "grapher01110/n8n-amir镜像版本更新情况跟踪"
+    },
+    {
+      "parameters": {
+        "command": "echo \"📧 n8n Docker镜像更新报告\" && echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\" && echo \"\" && cat .n8n_docker_image_latest.json | jq -r '.[] | \"🕐 \\(.date) | 🔖 \\(.version)\"' && echo \"\" && echo \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        816,
+        -144
+      ],
+      "id": "a14f4f61-d49d-48c4-b165-3bda68fa67d7",
+      "name": "读取最新的镜像Tag1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = {\n  'data':$(\"监控n8n镜像最新标签并保存到文件\").all(),\n  'data2':$(\"grapher01110/n8n-amir镜像版本更新情况跟踪\").all()\n       };\n\n// 提取 stdout 中第一个版本号的 x.y.z\nfunction extractVersion(obj) {\n  const arr = JSON.parse(obj.json.stdout);\n  const firstVersion = arr[0]?.version || \"\";\n  const match = firstVersion.match(/\\d+\\.\\d+\\.\\d+/);\n  return match ? match[0] : null;\n}\n\nconst v1 = extractVersion(data.data[0]);\nconst v2 = extractVersion(data.data2[0]);\n\nconsole.log(\"Version 1:\", v1);\nconsole.log(\"Version 2:\", v2);\nconsole.log(\"Are equal:\", v1 === v2);\nreturn {\"n8n-version-latest\":v1,\"n8n-amir-version-latest\":v2,\"need-update\":v1 !== v2}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -16
+      ],
+      "id": "62735431-856d-4902-ab78-c9a69f12e0c9",
+      "name": "比较镜像标签"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1cc9d022-0c99-483a-9d41-68d140ef96fc",
+              "leftValue": "={{ $json[\"need-update\"] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        -16
+      ],
+      "id": "6312bfa2-28d7-42ed-861c-551fe8fcb4b0",
+      "name": "是否需要发送邮件提醒更新n8n-amir镜像"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        832,
+        96
+      ],
+      "id": "88b5ade5-3a63-4c0c-b872-f5ba284b0b26",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        272,
+        -16
+      ],
+      "id": "d55281bd-ade1-47d6-9447-08df19b93270",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "grapher01110/n8n-amir镜像版本更新情况跟踪",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "监控n8n镜像最新标签并保存到文件",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "监控n8n镜像最新标签并保存到文件": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "grapher01110/n8n-amir镜像版本更新情况跟踪": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "比较镜像标签": {
+      "main": [
+        [
+          {
+            "node": "是否需要发送邮件提醒更新n8n-amir镜像",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "是否需要发送邮件提醒更新n8n-amir镜像": {
+      "main": [
+        [
+          {
+            "node": "读取最新的镜像Tag1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "读取最新的镜像Tag1": {
+      "main": [
+        [
+          {
+            "node": "发送邮件提醒",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "比较镜像标签",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "99d5f24c-3094-4389-af56-672e06b2f499",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b496150841483df09747a25f479a6e6cb04c07854a3a873184d83eedf527a4e8"
+  },
+  "id": "wYj9sy8dcwOAcXnr",
+  "tags": []
+}
