@@ -58,7 +58,7 @@
     },
     {
       "parameters": {
-        "command": "curl -s \"https://hub.docker.com/v2/repositories/grapher01110/n8n-amir/tags/?page_size=100\" |\njq '[.results[]\n    | select(.name | test(\"^v[0-9]+\\\\.[0-9]+\\\\.[0-9]+\"))   # 只保留 v 开头的语义化版本\n    | {date: (now | strftime(\"%Y-%m-%d\")), version: .name}\n]\n| sort_by(\n    (.version | ltrimstr(\"v\") | split(\"-\")[0] | split(\".\") | map(tonumber)),\n    (.version | split(\"-\")[1] // \"\")\n)\n| reverse'\n"
+        "command": "curl -s \"https://hub.docker.com/v2/repositories/grapher01110/n8n-amir/tags\" |\njq '[.results[]\n    | select(.name | test(\"^[0-9]+\\\\.[0-9]+\\\\.[0-9]+\"))   # 只保留 v 开头的语义化版本\n    | {date: (now | strftime(\"%Y-%m-%d\")), version: .name}\n]\n| sort_by(\n    (.version | ltrimstr(\"v\") | split(\"-\")[0] | split(\".\") | map(tonumber)),\n    (.version | split(\"-\")[1] // \"\")\n)\n| reverse'\n"
       },
       "type": "n8n-nodes-base.executeCommand",
       "typeVersion": 1,
@@ -248,7 +248,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "99d5f24c-3094-4389-af56-672e06b2f499",
+  "versionId": "6a6e5a4a-14ba-4f06-8d3a-c51dc652fe29",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b496150841483df09747a25f479a6e6cb04c07854a3a873184d83eedf527a4e8"
